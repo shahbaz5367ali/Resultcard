@@ -444,6 +444,46 @@
             color: #000000 !important;
         }
 
+        /* MOBILE RESPONSIVE STYLING */
+        @media screen and (max-width: 900px) {
+            body {
+                overflow: auto;
+                height: auto;
+            }
+            .app-layout {
+                flex-direction: column;
+                height: auto;
+            }
+            .icon-sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: center;
+                padding: 10px;
+                border-right: none;
+                border-bottom: 1px solid #1e293b;
+            }
+            .dashboard-view {
+                flex-direction: column;
+                height: auto;
+            }
+            .controls-container {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #1e293b;
+            }
+            .preview-workspace {
+                padding: 10px;
+                overflow-x: auto;
+            }
+            .a4-sheet {
+                transform: scale(0.48);
+                transform-origin: top center;
+                margin-bottom: -150mm;
+            }
+        }
+
         /* STRICT FULL PAGE PRINT STYLES - GUARANTEED VISIBILITY FOR PRINT */
         @media print {
             @page {
@@ -471,6 +511,8 @@
                 background: #ffffff !important;
             }
             .a4-sheet {
+                transform: none !important;
+                margin-bottom: 0 !important;
                 box-shadow: none !important;
                 width: 210mm !important;
                 height: 297mm !important;
