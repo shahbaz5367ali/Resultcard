@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result Card Generator</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@500;600;700;800;900&family=Montserrat:wght@700;800;900&family=Oswald:wght@600;700&family=Playfair+Display:wght@700;900&family=Roboto:wght@700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            background-color: #090d16;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 1. LEFT ICON SIDEBAR */
+        .icon-sidebar {
+            width: 60px;
+            background: #0f172a;
+            border-right: 1px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 15px;
+            gap: 15px;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        .sidebar-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        .sidebar-btn span {
+            font-size: 7px;
+            margin-top: 2px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .sidebar-btn:hover, .sidebar-btn.active {
+            background: #38bdf8;
+            color: #0f172a;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        /* MAIN CONTENT VIEWS */
+        .main-content {
+            flex: 1;
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* FULL HISTORY VIEW */
+        .full-history-panel {
+            flex: 1;
+            background: #0b0f19;
+            padding: 30px;
+            overflow-y: auto;
+            display: none;
+        }
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* DASHBOARD VIEW */
+        .dashboard-view {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls-container {
+            width: 400px;
+            background: #0f172a;
+            border-right: 1px solid #1e293b;
+            padding: 15px;
+            overflow-y: auto;
+            height: 100%;
+            flex-shrink: 0;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .form-group input, .form-group select {
+            padding: 8px 10px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .shortcut-hint {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 6px;
+            font-size: 11px;
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .marks-input-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .marks-input-table th, .marks-input-table td {
+            padding: 5px;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+        .marks-input-table th {
+            background: #1e293b;
+            font-size: 10px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .marks-input-table input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #38bdf8;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .marks-input-table input.sub-name-input {
+            color: #fff;
+            text-align: left;
+            padding-left: 4px;
+        }
+
+        .btn-del-row {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 800;
+        }
+        .btn-add-sub {
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1px solid #334155;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-top: 8px;
+            width: 100%;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .btn-save-record {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+            width: 100%;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .btn-action {
+            flex: 1;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            color: white;
+            text-transform: uppercase;
+        }
+        .btn-download { background: #0284c7; }
+        .btn-print { background: #059669; }
+
+        /* HISTORY CARDS STYLING */
+        .history-card {
+            background: #1e293b;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .history-card h4 { margin: 0 0 4px 0; font-size: 15px; color: #fff; }
+        .history-card p { margin: 0; font-size: 12px; color: #94a3b8; }
+        .history-card-btns { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-card-action {
+            flex: 1; padding: 6px; border-radius: 4px; border: none; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase;
+        }
+        .btn-load { background: #0284c7; color: white; }
+        .btn-remove { background: #ef4444; color: white; }
+
+        /* A4 PREVIEW WORKSPACE */
+        .preview-workspace {
+            flex: 1;
+            background: #020617;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* EXACT FULL A4 PAGE DIMENSIONS & PROPORTIONAL SPACING */
+        .a4-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            height: 297mm;
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 15mm 18mm;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 6px solid #000000 !important;
+        }
+
+        .card-main-content {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        /* HEADER DESIGN WITH PROPER PADDING AND TEXT SIZES */
+        .card-header {
+            text-align: center;
+            background: #000000 !important;
+            color: #ffffff !important;
+            padding: 22px 12px;
+            margin-bottom: 20px;
+            border: 3px solid #000000 !important;
+        }
+        .school-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffffff !important;
+            font-family: 'Cinzel', serif;
+            line-height: 1.2;
+        }
+        .school-sub {
+            font-size: 15px;
+            color: #ffffff !important;
+            margin: 8px 0 0 0;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .badge-exam {
+            display: inline-block;
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 6px 22px;
+            font-size: 15px;
+            font-weight: 900;
+            border-radius: 4px;
+            margin-top: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border: 2px solid #000000 !important;
+        }
+
+        /* STUDENT PROFILE CONTAINER */
+        .student-profile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 16px 20px;
+            border: 3px solid #000000 !important;
+            background: #ffffff !important;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 30px;
+            width: 74%;
+            font-size: 16px;
+        }
+        .info-item {
+            border-bottom: 2px solid #000000 !important;
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            padding-right: 5px;
+        }
+        .info-item span.label {
+            font-weight: 900;
+            color: #000000 !important;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .info-item span.val {
+            font-weight: 800;
+            color: #000000 !important;
+            font-size: 15px;
+        }
+
+        .photo-container {
+            width: 130px;
+            height: 155px;
+            border: 2.5px solid #000000 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff !important;
+        }
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* MARKS TABLE BUILT FOR FULL PAGE COVERAGE */
+        .table-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+        .marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 3px solid #000000 !important;
+            background: #ffffff !important;
+        }
+        .marks-table th, .marks-table td {
+            border: 2px solid #000000 !important;
+            padding: 9.5px 12px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 800;
+            color: #000000 !important;
+        }
+        .marks-table th {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            font-weight: 900;
+            font-size: 15px;
+            text-transform: uppercase;
+            padding: 12px;
+        }
+        .marks-table tbody tr:nth-child(even) {
+            background-color: #f5f5f5 !important;
+        }
+        .marks-table td.sub-name {
+            text-align: left;
+            font-weight: 900;
+            color: #000000 !important;
+        }
+        .total-row {
+            background-color: #000000 !important;
+        }
+        .total-row td {
+            color: #ffffff !important;
+            background-color: #000000 !important;
+            padding: 12px;
+            font-weight: 900 !important;
+            font-size: 16px;
+        }
+
+        /* FOOTER SIGNATURES WITH CONTINUOUS UNDERSCORE LINE */
+        .footer-signatures {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px 10px 20px;
+            margin-top: auto;
+        }
+        .sig-box {
+            text-align: left;
+            font-size: 15px;
+            font-weight: 900;
+            color: #000000 !important;
+        }
+
+        /* STRICT FULL PAGE PRINT STYLES - GUARANTEED VISIBILITY FOR PRINT */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .icon-sidebar, .controls-container, .full-history-panel { 
+                display: none !important; 
+            }
+            .main-content, .dashboard-view, .preview-workspace {
+                display: block !important;
+                width: 100% !important;
+                height: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: #ffffff !important;
+            }
+            .a4-sheet {
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 auto !important;
+                padding: 15mm 18mm !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                border: 6px solid #000000 !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .card-header {
+                background: #000000 !important;
+                color: #ffffff !important;
+            }
+            .school-title, .school-sub {
+                color: #ffffff !important;
+            }
+            .badge-exam {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .marks-table th {
+                background-color: #000000 !important;
+                color: #ffffff !important;
+            }
+            .total-row {
+                background-color: #000000 !important;
+            }
+            .total-row td {
+                background-color: #000000 !important;
+                color: #ffffff !important;
+                font-size: 16px !important;
+                font-weight: 900 !important;
+            }
+            .marks-table td {
+                color: #000000 !important;
+            }
+            .info-item span {
+                color: #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+    
+    <!-- 1. LEFT ICON SIDEBAR -->
+    <div class="icon-sidebar">
+        <div class="sidebar-btn active" onclick="switchView('dashboard')" id="btnDashboard">
+            ???
+            <span>Board</span>
+        </div>
+        <div class="sidebar-btn" onclick="switchView('history')" id="btnHistory">
+            ??
+            <span>History</span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT VIEW -->
+    <div class="main-content">
+        
+        <!-- DASHBOARD VIEW (FORM + A4 PREVIEW) -->
+        <div class="dashboard-view" id="dashboardView">
+            
+            <!-- FORM CONTROLS -->
+            <div class="controls-container">
+                <div style="border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 12px;">
+                    <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase;">Header Settings</span>
+                    <div class="form-grid" style="margin-top: 8px;">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Font Style</label>
+                            <select id="modalFontFamily" onchange="saveSettings()">
+                                <option value="'Cinzel', serif">Royal Serif (Cinzel)</option>
+                                <option value="'Montserrat', sans-serif">Bold Modern (Montserrat)</option>
+                                <option value="'Playfair Display', serif">Classic Elegant (Playfair)</option>
+                                <option value="'Inter', sans-serif">Clean Minimalist (Inter)</option>
+                                <option value="'Oswald', sans-serif">Condensed Impact (Oswald)</option>
+                                <option value="'Roboto', sans-serif">Standard Bold (Roboto)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>School Name</label>
+                            <input type="text" id="modalSchoolName" oninput="saveSettings()">
+                        </div>
+                        <div class="form-group">
+                            <label>Subtitle</label>
+                            <input type="text" id="modalSchoolSub" oninput="saveSettings()">
+                        </div>
+                        <div class="form-group">
+                            <label>Exam Title</label>
+                            <input type="text" id="modalExamTitle" oninput="saveSettings()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Student Name</label>
+                        <input type="text" id="stdName" placeholder="Student Name" oninput="renderCard()">
+                    </div>
+                    <div class="form-group">
+                        <label>Father Name</label>
+                        <input type="text" id="fatherName" placeholder="Father Name" oninput="renderCard()">
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <input type="text" id="className" placeholder="e.g. 3rd" oninput="renderCard()">
+                    </div>
+                    <div class="form-group">
+                        <label>Roll No</label>
+                        <input type="text" id="rollNo" placeholder="e.g. 08" oninput="renderCard()">
+                    </div>
+                    <div class="form-group">
+                        <label>Position</label>
+                        <input type="text" id="position" placeholder="e.g. 1st" oninput="renderCard()">
+                    </div>
+                    <div class="form-group">
+                        <label>Student Photo</label>
+                        <input type="file" id="photoInput" accept="image/*" onchange="loadPhoto(event)">
+                    </div>
+                </div>
+
+                <div class="shortcut-hint">
+                    Press Enter / Down Arrow (?) to quickly jump to next subject mark.
+                </div>
+
+                <table class="marks-input-table">
+                    <thead>
+                        <tr>
+                            <th>Subject Name</th>
+                            <th style="width: 55px;">Max</th>
+                            <th style="width: 55px;">Obt</th>
+                            <th style="width: 45px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subjectEditorRows"></tbody>
+                </table>
+                <button class="btn-add-sub" onclick="addSubjectRow()">+ Add Subject</button>
+                <button class="btn-save-record" onclick="saveCurrentStudent()">?? Save Result to History</button>
+
+                <div class="action-buttons">
+                    <button class="btn-action btn-download" onclick="downloadPDF()">Download PDF</button>
+                    <button class="btn-action btn-print" onclick="window.print()">Print Card</button>
+                </div>
+            </div>
+
+            <!-- A4 PREVIEW CANVAS -->
+            <div class="preview-workspace">
+                <div class="a4-sheet" id="cardCanvas">
+                    <div class="card-main-content">
+                        <!-- Header -->
+                        <div class="card-header">
+                            <h1 class="school-title" id="outSchoolName">NATIONAL GRAMMAR SCHOOL BHUALRAIN</h1>
+                            <p class="school-sub" id="outSchoolSub">Quality Education For Future Leaders</p>
+                            <div class="badge-exam" id="outExamTitle">FINAL EXAM 2026</div>
+                        </div>
+
+                        <!-- Student Profile Info -->
+                        <div class="student-profile">
+                            <div class="info-grid">
+                                <div class="info-item"><span class="label">STUDENT NAME</span> <span class="val" id="outStdName">-</span></div>
+                                <div class="info-item"><span class="label">ROLL NO</span> <span class="val" id="outRollNo">-</span></div>
+                                <div class="info-item"><span class="label">FATHER NAME</span> <span class="val" id="outFatherName">-</span></div>
+                                <div class="info-item"><span class="label">CLASS</span> <span class="val" id="outClass">-</span></div>
+                                
+                                <div class="info-item"><span class="label">PERCENTAGE</span> <span class="val" id="outPercentage">0%</span></div>
+                                <div class="info-item"><span class="label">GRADE</span> <span class="val" id="outGrade">-</span></div>
+                                <div class="info-item"><span class="label">POSITION</span> <span class="val" id="outPosition">-</span></div>
+                                <div class="info-item"><span class="label">STATUS</span> <span class="val" id="outStatus">-</span></div>
+                            </div>
+                            
+                            <div class="photo-container">
+                                <img id="outPhoto" src="" alt="" style="display:none;">
+                                <span id="photoPlaceholder" style="font-size:12px; font-weight:bold; color:#000000;">PHOTO</span>
+                            </div>
+                        </div>
+
+                        <!-- Marks Table -->
+                        <div class="table-container">
+                            <table class="marks-table">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left;">SUBJECT</th>
+                                        <th>MAXIMUM MARKS</th>
+                                        <th>OBTAIN MARKS</th>
+                                        <th>REMARKS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="outMarksTable"></tbody>
+                                <tfoot>
+                                    <tr class="total-row">
+                                        <td class="sub-name" style="color: #ffffff !important;">TOTAL:</td>
+                                        <td id="outTotalMax" style="color: #ffffff !important;">0</td>
+                                        <td id="outTotalObt" style="color: #ffffff !important;">0</td>
+                                        <td id="outTotalRem" style="color: #ffffff !important;">0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Footer Signatures -->
+                    <div class="footer-signatures">
+                        <div class="sig-box">
+                            Incharge Sign: ___________________________
+                        </div>
+                        <div class="sig-box">
+                            Principal Sign: ___________________________
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FULL HISTORY VIEW -->
+        <div class="full-history-panel" id="fullHistoryPanel">
+            <h2 style="color: #38bdf8; margin-top: 0; text-transform: uppercase;">Saved Result Cards History</h2>
+            <div class="history-grid" id="historyListContainer"></div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const DEFAULT_CONFIG = {
+        schoolName: "NATIONAL GRAMMAR SCHOOL BHUALRAIN",
+        schoolSub: "Quality Education For Future Leaders",
+        examTitle: "FINAL EXAM 2026",
+        fontFamily: "'Cinzel', serif"
+    };
+
+    let appConfig = {...DEFAULT_CONFIG};
+
+    let subjectsData = [
+        { name: "ENGLISH", max: "50", obt: "36" },
+        { name: "URDU", max: "50", obt: "35" },
+        { name: "ISLAMIYAT", max: "50", obt: "35" },
+        { name: "MATH", max: "50", obt: "39" },
+        { name: "SCIENCE", max: "50", obt: "36" },
+        { name: "COMPUTER/S.S.T", max: "50", obt: "38" },
+        { name: "NAZRA/ARABIC", max: "50", obt: "30" },
+        { name: "G.K", max: "=", obt: "=" },
+        { name: "POEM", max: "=", obt: "=" },
+        { name: "DRAWING", max: "=", obt: "=" },
+        { name: "ONE DISH PARTY", max: "50", obt: "40" }
+    ];
+
+    let currentPhotoBase64 = "";
+
+    function loadSavedConfig() {
+        const saved = localStorage.getItem("NGS_BW_CONFIG_DESKTOP");
+        if(saved) appConfig = JSON.parse(saved);
+        
+        document.getElementById("modalSchoolName").value = appConfig.schoolName;
+        document.getElementById("modalSchoolSub").value = appConfig.schoolSub;
+        document.getElementById("modalExamTitle").value = appConfig.examTitle;
+        document.getElementById("modalFontFamily").value = appConfig.fontFamily;
+    }
+
+    function switchView(view) {
+        document.getElementById("btnDashboard").classList.remove("active");
+        document.getElementById("btnHistory").classList.remove("active");
+
+        if(view === 'history') {
+            document.getElementById("btnHistory").classList.add("active");
+            document.getElementById("dashboardView").style.display = "none";
+            document.getElementById("fullHistoryPanel").style.display = "block";
+            renderHistoryList();
+        } else {
+            document.getElementById("btnDashboard").classList.add("active");
+            document.getElementById("dashboardView").style.display = "flex";
+            document.getElementById("fullHistoryPanel").style.display = "none";
+        }
+    }
+
+    function initEditor() {
+        loadSavedConfig();
+        const tbody = document.getElementById("subjectEditorRows");
+        tbody.innerHTML = "";
+        subjectsData.forEach((sub, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><input type="text" class="sub-name-input" value="${sub.name}" oninput="updateSubjectName(${index}, this.value)"></td>
+                    <td><input type="text" value="${sub.max}" placeholder="0" oninput="updateSubjectMax(${index}, this.value)"></td>
+                    <td><input type="text" class="obt-field" value="${sub.obt}" placeholder="0" oninput="updateSubjectObt(${index}, this.value)" onkeydown="handleKeyNavigation(event, ${index})"></td>
+                    <td><button class="btn-del-row" onclick="deleteSubject(${index})">Del</button></td>
+                </tr>
+            `;
+        });
+        renderCard();
+    }
+
+    function handleKeyNavigation(event, index) {
+        const fields = document.querySelectorAll('.obt-field');
+        if (event.key === "Enter" || event.key === "ArrowDown") {
+            event.preventDefault();
+            if (index + 1 < fields.length) {
+                fields[index + 1].focus();
+                fields[index + 1].select();
+            }
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (index - 1 >= 0) {
+                fields[index - 1].focus();
+                fields[index - 1].select();
+            }
+        }
+    }
+
+    function addSubjectRow() {
+        subjectsData.push({ name: "", max: "", obt: "" });
+        initEditor();
+    }
+
+    function deleteSubject(index) {
+        subjectsData.splice(index, 1);
+        initEditor();
+    }
+
+    function updateSubjectName(index, val) { subjectsData[index].name = val; renderCard(); }
+    function updateSubjectMax(index, val) { subjectsData[index].max = val; renderCard(); }
+    function updateSubjectObt(index, val) { subjectsData[index].obt = val; renderCard(); }
+
+    function renderCard() {
+        document.getElementById("outSchoolName").innerText = appConfig.schoolName;
+        document.getElementById("outSchoolSub").innerText = appConfig.schoolSub;
+        document.getElementById("outExamTitle").innerText = appConfig.examTitle;
+        document.getElementById("outSchoolName").style.fontFamily = appConfig.fontFamily;
+
+        document.getElementById("outStdName").innerText = document.getElementById("stdName").value || "-";
+        document.getElementById("outFatherName").innerText = document.getElementById("fatherName").value || "-";
+        document.getElementById("outClass").innerText = document.getElementById("className").value || "-";
+        document.getElementById("outRollNo").innerText = document.getElementById("rollNo").value || "-";
+        document.getElementById("outPosition").innerText = document.getElementById("position").value || "-";
+
+        const tbody = document.getElementById("outMarksTable");
+        tbody.innerHTML = "";
+
+        let totalMax = 0;
+        let totalObt = 0;
+
+        subjectsData.forEach((sub) => {
+            let mVal = sub.max.trim();
+            let oVal = sub.obt.trim();
+            let isNumeric = !isNaN(mVal) && !isNaN(oVal) && mVal !== "" && oVal !== "";
+
+            let m = isNumeric ? parseFloat(mVal) : 0;
+            let o = isNumeric ? parseFloat(oVal) : 0;
+            let rem = isNumeric ? (m - o) : "=";
+            
+            if(isNumeric) {
+                totalMax += m;
+                totalObt += o;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="sub-name">${sub.name || "-"}</td>
+                    <td>${sub.max !== "" ? sub.max : "-"}</td>
+                    <td>${sub.obt !== "" ? sub.obt : "-"}</td>
+                    <td>${isNumeric ? (rem === 0 ? 'Full' : rem) : rem}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById("outTotalMax").innerText = totalMax;
+        document.getElementById("outTotalObt").innerText = totalObt;
+        document.getElementById("outTotalRem").innerText = totalMax - totalObt;
+
+        let per = totalMax > 0 ? ((totalObt / totalMax) * 100).toFixed(1) : 0;
+        document.getElementById("outPercentage").innerText = per + "%";
+
+        let grade = "-";
+        let status = "-";
+        if (totalMax > 0) {
+            if (per >= 80) { grade = "A+"; status = "PASS"; }
+            else if (per >= 70) { grade = "A"; status = "PASS"; }
+            else if (per >= 60) { grade = "B"; status = "PASS"; }
+            else if (per >= 50) { grade = "C"; status = "PASS"; }
+            else if (per >= 40) { grade = "D"; status = "PASS"; }
+            else { grade = "F"; status = "FAIL"; }
+        }
+
+        document.getElementById("outGrade").innerText = grade;
+        document.getElementById("outStatus").innerText = status;
+    }
+
+    function saveCurrentStudent() {
+        const stdName = document.getElementById("stdName").value.trim();
+        if(!stdName) {
+            alert("Please enter Student Name before saving.");
+            return;
+        }
+
+        const studentRecord = {
+            id: Date.now(),
+            stdName: stdName,
+            fatherName: document.getElementById("fatherName").value,
+            className: document.getElementById("className").value,
+            rollNo: document.getElementById("rollNo").value,
+            position: document.getElementById("position").value,
+            subjects: JSON.parse(JSON.stringify(subjectsData)),
+            photo: currentPhotoBase64
+        };
+
+        let history = JSON.parse(localStorage.getItem("NGS_STUDENT_HISTORY") || "[]");
+        history.unshift(studentRecord);
+        localStorage.setItem("NGS_STUDENT_HISTORY", JSON.stringify(history));
+
+        alert("Saved to History!");
+    }
+
+    function renderHistoryList() {
+        const history = JSON.parse(localStorage.getItem("NGS_STUDENT_HISTORY") || "[]");
+        const container = document.getElementById("historyListContainer");
+        container.innerHTML = "";
+
+        if(history.length === 0) {
+            container.innerHTML = `<p style="color:#94a3b8; font-size:14px;">No saved cards found in history.</p>`;
+            return;
+        }
+
+        history.forEach((rec) => {
+            container.innerHTML += `
+                <div class="history-card">
+                    <h4>${rec.stdName}</h4>
+                    <p>Class: ${rec.className || 'N/A'} | Roll: ${rec.rollNo || 'N/A'}</p>
+                    <div class="history-card-btns">
+                        <button class="btn-card-action btn-load" onclick="loadStudentFromHistory(${rec.id})">Open Card</button>
+                        <button class="btn-card-action btn-remove" onclick="deleteHistoryItem(${rec.id})">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function loadStudentFromHistory(id) {
+        const history = JSON.parse(localStorage.getItem("NGS_STUDENT_HISTORY") || "[]");
+        const rec = history.find(item => item.id === id);
+        if(rec) {
+            document.getElementById("stdName").value = rec.stdName || "";
+            document.getElementById("fatherName").value = rec.fatherName || "";
+            document.getElementById("className").value = rec.className || "";
+            document.getElementById("rollNo").value = rec.rollNo || "";
+            document.getElementById("position").value = rec.position || "";
+            
+            subjectsData = rec.subjects || [];
+            currentPhotoBase64 = rec.photo || "";
+
+            const photo = document.getElementById("outPhoto");
+            const placeholder = document.getElementById("photoPlaceholder");
+            if(currentPhotoBase64) {
+                photo.src = currentPhotoBase64;
+                photo.style.display = "block";
+                placeholder.style.display = "none";
+            } else {
+                photo.style.display = "none";
+                placeholder.style.display = "block";
+            }
+
+            initEditor();
+            switchView('dashboard');
+        }
+    }
+
+    function deleteHistoryItem(id) {
+        let history = JSON.parse(localStorage.getItem("NGS_STUDENT_HISTORY") || "[]");
+        history = history.filter(item => item.id !== id);
+        localStorage.setItem("NGS_STUDENT_HISTORY", JSON.stringify(history));
+        renderHistoryList();
+    }
+
+    function saveSettings() {
+        appConfig.schoolName = document.getElementById("modalSchoolName").value;
+        appConfig.schoolSub = document.getElementById("modalSchoolSub").value;
+        appConfig.examTitle = document.getElementById("modalExamTitle").value;
+        appConfig.fontFamily = document.getElementById("modalFontFamily").value;
+
+        localStorage.setItem("NGS_BW_CONFIG_DESKTOP", JSON.stringify(appConfig));
+        renderCard();
+    }
+
+    function loadPhoto(event) {
+        const photo = document.getElementById("outPhoto");
+        const placeholder = document.getElementById("photoPlaceholder");
+        if(event.target.files && event.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentPhotoBase64 = e.target.result;
+                photo.src = currentPhotoBase64;
+                photo.style.display = "block";
+                placeholder.style.display = "none";
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    }
+
+    function downloadPDF() {
+        const element = document.getElementById("cardCanvas");
+        const stdName = document.getElementById("stdName").value || "Student";
+        
+        const opt = {
+            margin:       0,
+            filename:     `${stdName}_Result_Card_BW.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save();
+    }
+
+    window.onload = initEditor;
+</script>
+
+</body>
+</html>
