@@ -7,7 +7,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@500;600;700;800;900&family=Montserrat:wght@700;800;900&family=Oswald:wght@600;700&family=Playfair+Display:wght@700;900&family=Roboto:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@500;600;700;800;900&family=Montserrat:wght@700;800;900&family=Oswald:wght@600;700&family=Playfair+Display:wght@700;900&family=Roboto:wght@700;900&family=Great+Vibes&family=Dancing+Script:wght@700&family=Mrs+Saint+Delafield&family=Caveat:wght@700&display=swap" rel="stylesheet">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -432,13 +432,43 @@
         .sig-box {
             flex: 1;
             text-align: center;
-            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .sig-name {
+            min-height: 56px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-family: 'Great Vibes', cursive;
+            font-size: 38px;
+            line-height: 1;
+            color: #1e3a8a !important;
+            transform: rotate(-3deg);
+            padding-bottom: 2px;
+            white-space: nowrap;
+        }
+        .sig-label {
+            font-size: 12.5px;
             font-weight: 800;
             color: #1e3a8a !important;
             border-top: 1.5px solid #1e3a8a;
             padding-top: 6px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+        }
+        .sig-label::before {
+            content: "\2756";
+            color: #b7791f;
+            margin-right: 6px;
+            font-size: 10px;
+        }
+        .sig-label::after {
+            content: "\2756";
+            color: #b7791f;
+            margin-left: 6px;
+            font-size: 10px;
         }
 
         /* MOBILE */
@@ -601,6 +631,29 @@
                     <tbody id="subjectEditorRows"></tbody>
                 </table>
                 <button class="btn-add-sub" onclick="addSubjectRow()">+ Add Subject</button>
+                <div style="border-top: 1px solid #1e293b; padding-top: 10px; margin-top: 14px;">
+                    <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase;">Signature Settings</span>
+                    <div class="form-grid" style="margin-top: 8px;">
+                        <div class="form-group">
+                            <label>Incharge Name</label>
+                            <input type="text" id="inchargeName" placeholder="Incharge ka naam" oninput="saveSignConfig()">
+                        </div>
+                        <div class="form-group">
+                            <label>Principal Name</label>
+                            <input type="text" id="principalName" placeholder="Principal ka naam" oninput="saveSignConfig()">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Signature Style</label>
+                            <select id="signFont" onchange="saveSignConfig()">
+                                <option value="'Great Vibes', cursive">Elegant (Great Vibes)</option>
+                                <option value="'Mrs Saint Delafield', cursive">Real Signature (Mrs Saint Delafield)</option>
+                                <option value="'Dancing Script', cursive">Smooth (Dancing Script)</option>
+                                <option value="'Caveat', cursive">Hand Written (Caveat)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="btn-save-record" onclick="saveCurrentStudent()">Save Result to History</button>
 
                 <div class="action-buttons">
@@ -663,8 +716,14 @@
 
                     <!-- Signatures -->
                     <div class="footer-signatures">
-                        <div class="sig-box">Incharge Sign</div>
-                        <div class="sig-box">Principal Sign</div>
+                        <div class="sig-box">
+                            <div class="sig-name" id="outInchargeSig"></div>
+                            <div class="sig-label">Incharge Sign</div>
+                        </div>
+                        <div class="sig-box">
+                            <div class="sig-name" id="outPrincipalSig"></div>
+                            <div class="sig-label">Principal Sign</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -713,6 +772,38 @@
             .replace(/"/g, "&quot;");
     }
 
+    /* ---------- SIGNATURES: naam likhen to sign ban jaye ga ---------- */
+    let signConfig = { incharge: "", principal: "", font: "'Great Vibes', cursive" };
+
+    function loadSignConfig() {
+        const saved = localStorage.getItem("NGS_SIGN_CONFIG");
+        if (saved) signConfig = Object.assign(signConfig, JSON.parse(saved));
+        document.getElementById("inchargeName").value = signConfig.incharge;
+        document.getElementById("principalName").value = signConfig.principal;
+        document.getElementById("signFont").value = signConfig.font;
+    }
+
+    function saveSignConfig() {
+        signConfig.incharge = document.getElementById("inchargeName").value;
+        signConfig.principal = document.getElementById("principalName").value;
+        signConfig.font = document.getElementById("signFont").value;
+        localStorage.setItem("NGS_SIGN_CONFIG", JSON.stringify(signConfig));
+        renderSignatures();
+    }
+
+    function renderSignatures() {
+        const inc = document.getElementById("outInchargeSig");
+        const pri = document.getElementById("outPrincipalSig");
+        inc.innerText = signConfig.incharge.trim();
+        pri.innerText = signConfig.principal.trim();
+        inc.style.fontFamily = signConfig.font;
+        pri.style.fontFamily = signConfig.font;
+        // Real Signature wala font chhota hota hai, isliye size barha diya
+        const big = signConfig.font.indexOf("Delafield") !== -1;
+        inc.style.fontSize = big ? "56px" : "38px";
+        pri.style.fontSize = big ? "56px" : "38px";
+    }
+
     /* ---------- CLASS: ek baar likh di to khali nahi hogi ---------- */
     function saveClass() {
         localStorage.setItem("NGS_SAVED_CLASS", document.getElementById("className").value);
@@ -730,6 +821,7 @@
         document.getElementById("modalSchoolSub").value = appConfig.schoolSub;
         document.getElementById("modalExamTitle").value = appConfig.examTitle;
         document.getElementById("modalFontFamily").value = appConfig.fontFamily;
+        loadSignConfig();
     }
 
     function switchView(view) {
@@ -868,6 +960,7 @@
             else grade = "F";
         }
         document.getElementById("outGrade").innerText = grade;
+        renderSignatures();
     }
 
     /* ---------- Download ke baad agle bache ke liye form khali ---------- */
